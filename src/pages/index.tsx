@@ -1,48 +1,93 @@
 import type { NextPage } from 'next'
-import Web3 from 'web3';
-import { AbiItem } from 'web3-utils';
-import ZombieAttackContract from "../../build-contracts/ZombieAttack.json"
-import { ZombieAttack } from '../types/abi';
+
 import { useWeb3 } from "@3rdweb/hooks"
-import { useEffect } from 'react';
-
-const networkAddress = "http://127.0.0.1:7545"
-const web3 = new Web3(new Web3.providers.HttpProvider(networkAddress))
-const contractAddress = "0x028Cb081d8277C491Fd6F907891cC61b99e91302"
-const ABI = ZombieAttackContract.abi as unknown  as AbiItem
-const contract = new web3.eth.Contract(ABI, contractAddress) as unknown as ZombieAttack
+import { useEffect, useState } from 'react';
+import { createZombie, getDetailZombiesByOwner, levelUp } from '../contract';
 
 
-
-const getZombieDetails = (id: string) => {
-  return contract.methods.zombies(id).call();
-}
-
-const zombieToOwner = (id: string) => {
-  return contract.methods.zombieToOwner(id).call();
-}
-
-const getZombiesByOwner = (ownerAddress: string) => {
-  return contract.methods.getZombiesByOwner(ownerAddress).call()
-}
 
 const Home: NextPage = () => {
   const {connectWallet, address, chainId, error} = useWeb3()
+  const [myZombie, setMyZombie] = useState<[string, string, string, string, string, string][]>()
+  const [name, setName] = useState<string | undefined>(undefined)
 
   const handleConnectWallet = () => {
     connectWallet("injected")
   }
 
+  const handleCreateZombie = () => {
+    if(!name) {
+      alert("ゾンビの名前を入力してください")
+      return
+    }
+    if(!address){
+      alert("walletに接続してください")
+      return
+    }
+    createZombie(name, address).then(() => {
+      getDetailZombiesByOwner(address).then(res => {
+        setMyZombie(res)
+      })
+    }).catch((error) => {
+      console.log(error)
+    });
+  }
+
+  const handleLevelUp = (id: string) => {
+    if(!address){
+      alert("walletに接続してください")
+      return
+    }
+    if(!confirm("0.001 etherがかかります")) return;
+    levelUp(id, address).then(() => {
+      //todo: idで指定して、そのゾンビだけのレベルを上げれば、getDetailZombiesByOwnerを実行しなくていい。
+      getDetailZombiesByOwner(address).then(res => {
+        setMyZombie(res)
+      })
+    } )
+  }
+
   useEffect(() => {
     if(!address) return
-    getZombiesByOwner("0x22E9D1CccC31209F265f854bbC4867C017459ab8").then((res) => {
-      console.log(res)
+    getDetailZombiesByOwner(address).then(res => {
+      setMyZombie(res)
     })
   },[address])
 
   return (
-    <div>
-      <button onClick={handleConnectWallet} className='py-2 px-4 bg-green-600 rounded text-white'>Connect Wallet</button>
+    <div className='py-4 px-12 space-y-4'>
+      <div className='text-right' >
+        <button onClick={handleConnectWallet} className='py-2 px-4 bg-green-600 rounded text-white'>Connect Wallet</button>
+      </div>
+      <div className='flex justify-between'>
+        <p >自分のゾンビ達</p>
+        {myZombie && myZombie.length < 2 ?
+          <div className='space-x-2 flex '>
+            <input className='border-b' placeholder='ゾンビの名前' onChange={(e) => setName(e.currentTarget.value)} />
+            <button onClick={handleCreateZombie} className='bg-blue-500 text-white py-1 px-2 rounded'>ゾンビの生成</button>
+          </div>
+        : null }
+      </div>
+      <div className='flex gap-3'>
+        {myZombie?.map((zombie) => {
+          const cooldownSec = (Number(zombie[3] + "000") - new Date().getTime()) / 1000
+          return (
+            <div key={zombie[1]} className="border p-4">
+              <p>{zombie[1]}</p>
+              <hr />
+              <div className='mt-4'>
+                <p>
+                  <span className='font-bold text-lg'>{zombie[0]}</span>
+                  <span className='ml-2'>(Lv.{zombie[2]})</span>
+                </p>
+                <p>time: { cooldownSec > 0 ? `${Math.trunc(cooldownSec / (60 * 60))}:${Math.trunc((cooldownSec / 60) % 60)}:${Math.trunc(cooldownSec % (60))}` : "準備OK"}</p>
+                <p>{`win ${zombie[4]} / lose ${zombie[5]}`}</p>
+                {/* TODO: コントラクト側でzombieにidを持つように修正、0をidに変更 */}
+                <button onClick={() => handleLevelUp("0")}>Level Up</button>
+              </div>
+          </div>)
+        })}
+      </div>
     </div>
   )
 }

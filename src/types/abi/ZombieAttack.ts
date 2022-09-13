@@ -68,6 +68,12 @@ export interface ZombieAttack extends BaseContract {
 
     getZombiesByOwner(_owner: string): NonPayableTransactionObject<string[]>;
 
+    getZombiesDetailByOwner(
+      _owner: string
+    ): NonPayableTransactionObject<
+      [string, string, string, string, string, string][]
+    >;
+
     levelUp(_zombieId: number | string | BN): PayableTransactionObject<void>;
 
     owner(): NonPayableTransactionObject<string>;
