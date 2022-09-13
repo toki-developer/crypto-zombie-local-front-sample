@@ -3,6 +3,7 @@ import Web3 from 'web3';
 import { AbiItem } from 'web3-utils';
 import ZombieAttackContract from "../../build-contracts/ZombieAttack.json"
 import { ZombieAttack } from '../types/abi';
+import { useWeb3 } from "@3rdweb/hooks"
 
 const networkAddress = "http://127.0.0.1:7545"
 const web3 = new Web3(new Web3.providers.HttpProvider(networkAddress))
@@ -12,10 +13,18 @@ const contract = new web3.eth.Contract(ABI, contractAddress) as unknown as Zombi
 
 const Home: NextPage = () => {
 
-  console.log(contract.methods.testAccessContract().call())
+  const {connectWallet, address, chainId, error} = useWeb3()
+  console.log("address: " + address)
+  console.log("chainId: " + chainId)
+  console.log("error: " + error)
+
+  const handleConnectWallet = () => {
+    connectWallet("injected")
+  }
 
   return (
     <div>
+      <button onClick={handleConnectWallet} className='py-2 px-4 bg-green-600 rounded text-white'>Connect Wallet</button>
     </div>
   )
 }
