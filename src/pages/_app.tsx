@@ -5,7 +5,7 @@ import "regenerator-runtime/runtime";
 import { ComponentProps, ReactNode } from 'react';
 
 type ThirdwebWeb3ProviderProps = ComponentProps<typeof _ThirdwebWeb3Provider>
-const ThirdwebWeb3Provider = _ThirdwebWeb3Provider as React.VFC<ThirdwebWeb3ProviderProps & {children: ReactNode}>
+const ThirdwebWeb3Provider = _ThirdwebWeb3Provider as React.FC<ThirdwebWeb3ProviderProps & {children: ReactNode}>
 
 const  App = ({ Component, pageProps }: AppProps) => {
   const supportedChainIds: number[] = [5];
